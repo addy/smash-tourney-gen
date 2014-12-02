@@ -23,25 +23,25 @@ print("cursor set...")
 ###################################
 
 # (mid, pid1, pid2, cid1, cid2, seed, tid) * Auto Increment on 'mid'
-insert_match_sql = "INSERT INTO match VALUES ('', %s, %s, %s, %s, %s, %s)"
+insert_match_sql = "INSERT INTO `match` VALUES ('', %s, %s, %s, %s, %s, %s)"
 
 # (oid, mid, winner, loser, score, time) * Auto Increment on 'oid'
-insert_outcome_sql = "INSERT INTO outcome VALUES ('', %s, %s, %s, %s, %s))"
+insert_outcome_sql = "INSERT INTO `outcome` VALUES ('', %s, %s, %s, %s, %s)"
 
 # (tid, pid)
-insert_participant_sql = "INSERT INTO participant VALUES (%s, %s)"
+insert_participant_sql = "INSERT INTO `participant` VALUES (%s, %s)"
 
 # (pid, name) * Auto Increment on 'pid'
-insert_player_sql = "INSERT INTO player VALUES ('', %s)"
+insert_player_sql = "INSERT INTO `player` VALUES ('', %s)"
 
 # (tid, name, date) * Auto Increment on 'tid'
-insert_tournament_sql = "INSERT INTO tournament VALUES ('', %s, %s)"
+insert_tournament_sql = "INSERT INTO `tournament` VALUES ('', %s, %s)"
 
-collect_pids = "SELECT * FROM player"
+collect_pids = "SELECT * FROM `player`"
 
-count_pids = "SELECT COUNT(*) FROM player"
+count_pids = "SELECT COUNT(*) FROM `player`"
 
-collect_tier_sql = "SELECT mid, pid1, pid2, cid1, cid2 FROM match WHERE tid = %s AND seed = %s"
+collect_tier_sql = "SELECT mid, pid1, pid2, cid1, cid2 FROM `match` WHERE tid = %s AND seed = %s"
 
 ###################################
 ##	FUNCTIONS
@@ -69,7 +69,7 @@ def insert_tournament(sql_query, name, date):
 
 # Returns set of players and their match in the given tournament and match seed
 def collect_tier(sql_query, tid, seed):
-	print("called: collect_tier_one(%s, %s, %s)" % (sql_query, tid, seed))
+	print("called: collect_tier(%s, %s, %s)" % (sql_query, tid, seed))
 	cur.execute(sql_query, (tid, seed,))
 	return cur.fetchone()
 
@@ -86,7 +86,7 @@ def generate_rand_date():
 	return year + "-" + str(month) + "-" + str(day)
 
 def generate_rand_character():
-	return str(randrange(1, 12))
+	return randrange(1, 13)
 
 def generate_rand_players():
 	players = []
@@ -96,19 +96,27 @@ def generate_rand_players():
 
 	# Create our list of players
 	for row in rows:
-		players.insert(row[0], row[0])
+		players.insert(int(row[0]), int(row[0]))
 
+	print(players)
 	cur.execute(count_pids)
 	row = cur.fetchone()
 	maxPlayer = row[0]
+	print(maxPlayer)
 
+	bracket_done = bool(0)
+	counter = 0
 	# Generate 16 distinct players to fill the bracket
-	for i in range(16):
-		rand_player = randrange(1, maxPlayer)
+	while bracket_done != bool(1):
+		rand_player = randrange(1, maxPlayer + 1)
+		print("Random player: %s" % (rand_player))
 		if rand_player in players:
-			tourney_bracket.append(players.pop(rand_player))
-		else:
-			i -= 1
+			tourney_bracket.append(players.pop(players.index(rand_player)))
+			counter += 1
+			if counter == 16:
+				bracket_done = bool(1)
+			print(players)
+	print(tourney_bracket)
 	return tourney_bracket
 
 # Create tournament, inserting random matches with outcomes 
@@ -128,6 +136,7 @@ def generate_tournament_tiers(tid):
 		insert_participant(insert_participant_sql, tid, pid1)
 		insert_participant(insert_participant_sql, tid, pid2)
 
+	db.commit()	
 	# Generate tier 2
 	create_tournament_matches(tid, 1, 8, 2, 9)
 
@@ -149,6 +158,7 @@ def generate_tournament_tiers(tid):
 	else:
 		losing_pid = row[1]
 	insert_outcome(insert_outcome_sql, final_mid, winning_pid, losing_pid, score, time)
+	db.commit()
 
 def create_tournament_matches(tid, beginning, end, increment, seed):
 	for i in range(beginning, end, increment):
@@ -182,6 +192,7 @@ def create_tournament_matches(tid, beginning, end, increment, seed):
 		insert_outcome(insert_outcome_sql, mid, winning_pid2, losing_pid, score, time)
 		insert_match(insert_match_sql, winning_pid1, winning_pid2, character1, character2, seed, tid)
 		seed += 1
+	db.commit()
 
 def create_tournaments(num_tournaments):
 	for i in range(num_tournaments):
