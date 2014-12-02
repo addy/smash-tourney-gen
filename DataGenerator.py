@@ -112,11 +112,12 @@ def generate_rand_players():
 	return tourney_bracket
 
 # Create tournament, inserting random matches with outcomes 
-# and inserting all participants into the tournament
-def create_tournament_matches(tid):
+# and inserting all participants into the tournament.
+# Assuming 5 stock between 0 and 20 minutes per game.
+def generate_tournament_tiers(tid):
 	tourney_bracket = generate_rand_players()
 
-	# Generate tier 1
+	# Generate initial random tier 1
 	for i in range(8):
 		pid1 = tourney_bracket.pop()
 		pid2 = tourney_bracket.pop()
@@ -127,42 +128,67 @@ def create_tournament_matches(tid):
 		insert_participant(insert_participant_sql, tid, pid1)
 		insert_participant(insert_participant_sql, tid, pid2)
 
-	# Generate tier 2 GUESSING ON WHAT TIME AND SCORE MEAN!!!
-	for i in range(8):
-		row = collect_tier(collect_tier_sql, tid, i + 1)
-		mid = row[0]
-		score = randrange(1, 250)
-		time = randrange(0, 4)
-		rand_winner = randrange(1, 2)
-		winning_pid1 = row[rand_winner]
-		losing_pid = row[2] if rand_winner == 1 else losing_pid = row[1]
-		character1 = row[3] if rand_winner == 1 else character1 = row[4]
-		insert_outcome(insert_outcome_sql, mid, winning_pid1, losing_pid, score, time)
-
-		row = collect_tier(collect_tier_sql, tid, i + 2)
-		mid = row[0]
-		score = randrange(1, 250)
-		time = randrange(0, 4)
-		rand_winner = randrange(1, 2)
-		winning_pid2 = row[rand_winner]
-		losing_pid = row[2] if rand_winner == 1 else losing_pid = row[1]
-		character2 = row[3] if rand_winner == 1 else character1 = row[4]
-		insert_outcome(insert_outcome_sql, mid, winning_pid2, losing_pid, score, time)
-		insert_match(insert_match_sql, winning_pid1, winning_pid2, character1, character2, i + 9)
-
+	# Generate tier 2
+	create_tournament_matches(tid, 1, 8, 2, 9)
 
 	# Generate tier 3
+	create_tournament_matches(tid, 9, 12, 2, 13)
 
 	# Generate tier 4
+	create_tournament_matches(tid, 13, 14, 2, 15)
 
 	# Generate winner
+	row = collect_tier(collect_tier_sql, tid, 15)
+	final_mid = row[0]
+	score = randrange(1, 5)
+	time = randrange(0, 20)
+	rand_winner = randrange(1, 2)
+	winning_pid = row[rand_winner]
+	if rand_winner == 1:
+		losing_pid = row[2]
+	else:
+		losing_pid = row[1]
+	insert_outcome(insert_outcome_sql, final_mid, winning_pid, losing_pid, score, time)
 
-def create_tournament():
-	for i in range(20):
-		create_tournament_matches(i + 1)
+def create_tournament_matches(tid, beginning, end, increment, seed):
+	for i in range(beginning, end, increment):
+		row = collect_tier(collect_tier_sql, tid, i)
+		mid = row[0]
+		score = randrange(1, 5)
+		time = randrange(0, 20)
+		rand_winner = randrange(1, 2)
+		winning_pid1 = row[rand_winner]
+		if rand_winner == 1:
+			losing_pid = row[2]
+			character1 = row[3]  
+		else:
+			losing_pid = row[1]
+			character1 = row[4]
+			
+		insert_outcome(insert_outcome_sql, mid, winning_pid1, losing_pid, score, time)
+
+		row2 = collect_tier(collect_tier_sql, tid, i + 1)
+		mid = row2[0]
+		score = randrange(1, 5)
+		time = randrange(0, 20)
+		rand_winner = randrange(1, 2)
+		winning_pid2 = row2[rand_winner]
+		if rand_winner == 1:
+			losing_pid = row2[2]
+			character2 = row2[3]  
+		else:
+			losing_pid = row2[1]
+			character2 = row2[4]
+		insert_outcome(insert_outcome_sql, mid, winning_pid2, losing_pid, score, time)
+		insert_match(insert_match_sql, winning_pid1, winning_pid2, character1, character2, seed, tid)
+		seed += 1
+
+def create_tournaments(num_tournaments):
+	for i in range(num_tournaments):
+		generate_tournament_tiers(i + 1)
 
 def perform_insertions():
-	# Tourneys
+	# Load tourneys
 	tourney_csv = open(sys.argv[1], 'rt')
 	try:
 		tourney_reader = csv.DictReader(tourney_csv)
@@ -172,7 +198,7 @@ def perform_insertions():
 		tourney_csv.close()
 		db.commit()
 	
-	# Players
+	# Load players
 	player_csv = open(sys.argv[2], 'rt')
 	try:
 		player_reader = csv.DictReader(player_csv)
@@ -181,6 +207,9 @@ def perform_insertions():
 	finally:
 		player_csv.close()
 		db.commit()
+
+	# Create 20 tournament brackets with matches and outcomes.
+	create_tournaments(20)
 
 
 perform_insertions()
