@@ -35,7 +35,7 @@ insert_participant_sql = "INSERT INTO `participant` VALUES (%s, %s)"
 insert_player_sql = "INSERT INTO `player` VALUES ('', %s)"
 
 # (tid, name, date) * Auto Increment on 'tid'
-insert_tournament_sql = "INSERT INTO `tournament` VALUES ('', %s, %s)"
+#insert_tournament_sql = "INSERT INTO `tournament` VALUES ('', %s, %s)"
 
 collect_pids = "SELECT * FROM `player`"
 
@@ -125,26 +125,27 @@ def generate_rand_players():
 def generate_tournament_tiers(tid):
 	tourney_bracket = generate_rand_players()
 
+	seed = 15
 	# Generate initial random tier 1
 	for i in range(8):
 		pid1 = tourney_bracket.pop()
 		pid2 = tourney_bracket.pop()
 		cid1 = generate_rand_character()
 		cid2 = generate_rand_character()
-		seed = i + 1
 		insert_match(insert_match_sql, pid1, pid2, cid1, cid2, seed, tid)
 		insert_participant(insert_participant_sql, tid, pid1)
 		insert_participant(insert_participant_sql, tid, pid2)
+		seed -= 1
 
 	db.commit()	
 	# Generate tier 2
-	create_tournament_matches(tid, 1, 8, 2, 9)
+	create_tournament_matches(tid, 1, 8, 2, 7)
 
 	# Generate tier 3
-	create_tournament_matches(tid, 9, 12, 2, 13)
+	create_tournament_matches(tid, 9, 12, 2, 3)
 
 	# Generate tier 4
-	create_tournament_matches(tid, 13, 14, 2, 15)
+	create_tournament_matches(tid, 13, 14, 2, 1)
 
 	# Generate winner
 	row = collect_tier(collect_tier_sql, tid, 15)
@@ -191,7 +192,7 @@ def create_tournament_matches(tid, beginning, end, increment, seed):
 			character2 = row2[4]
 		insert_outcome(insert_outcome_sql, mid, winning_pid2, losing_pid, score, time)
 		insert_match(insert_match_sql, winning_pid1, winning_pid2, character1, character2, seed, tid)
-		seed += 1
+		seed -= 1
 	db.commit()
 
 def create_tournaments(num_tournaments):
