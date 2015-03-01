@@ -9,10 +9,10 @@ from random import randrange
 ################################################################
 # Connect to the KSU MySQL database
 print("connecting")
-db = MySQLdb.connect(   host = "mysql.cis.ksu.edu",
-                                                user = "vanlan",
-                                                passwd = "insecurepassword",
-                                                db = "vanlan")
+db = MySQLdb.connect(   host = "host_name_here",
+                                                user = "user",
+                                                passwd = "password",
+                                                db = "user")
 print("connected")
 
 # We need a cursor object to perform all of our insertions/queries.
