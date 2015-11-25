@@ -3,5 +3,5 @@ Smash Tourney Generator
 
 
 # Usage
-* python DataGenerator.py Tourneys.csv Players.csv
+* python DataGenerator.py <tournament data> <player data>
 * Used to create randomized tournament data for the ssb-tourney project
